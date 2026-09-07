@@ -5,6 +5,9 @@
 import { useEffect, useState } from 'react'
 import { db, ref, onValue, set, get, update, runTransaction, ROOT } from './firebase.js'
 import { getPool, adjPool, addPaid } from './economy.js'
+import { BotBrain } from './core/botBrain.js'
+
+const botBrains = [new BotBrain('risk'), new BotBrain('safe'), new BotBrain('chaos'), new BotBrain('risk')]
 
 export const N_SEATS = 4
 export const BET_S = 15
@@ -12,13 +15,14 @@ export const SPIN_MS = 4200
 export const LOCK_MS = 1100
 export const RESULT_MS = 3600
 
+// Payout ~%3 üniform house edge için (SINIF bazlı: p=adet/12). EV = p*mult-1 ≈ -0.03
 export const SEG = [
-  { t: 2, c: '#e23b3b', l: 'x2' }, { t: 0, c: '#1a1d24', l: '💣' },
-  { t: 3, c: '#f5b301', l: 'x3' }, { t: 2, c: '#e23b3b', l: 'x2' },
-  { t: 'S', c: '#a05ce6', l: '🥷' }, { t: 2, c: '#e23b3b', l: 'x2' },
-  { t: 5, c: '#00c26e', l: 'x5' }, { t: 2, c: '#e23b3b', l: 'x2' },
-  { t: 3, c: '#f5b301', l: 'x3' }, { t: 'S', c: '#a05ce6', l: '🥷' },
-  { t: 2, c: '#e23b3b', l: 'x2' }, { t: 0, c: '#1a1d24', l: '💣' },
+  { t: 2.33, c: '#e23b3b', l: 'x2.33' }, { t: 0, c: '#1a1d24', l: '💣' },
+  { t: 5.82, c: '#f5b301', l: 'x5.82' }, { t: 2.33, c: '#e23b3b', l: 'x2.33' },
+  { t: 'S', c: '#a05ce6', l: '🥷' }, { t: 2.33, c: '#e23b3b', l: 'x2.33' },
+  { t: 11.64, c: '#00c26e', l: 'x11.64' }, { t: 2.33, c: '#e23b3b', l: 'x2.33' },
+  { t: 5.82, c: '#f5b301', l: 'x5.82' }, { t: 'S', c: '#a05ce6', l: '🥷' },
+  { t: 2.33, c: '#e23b3b', l: 'x2.33' }, { t: 0, c: '#1a1d24', l: '💣' },
 ]
 const N = SEG.length
 const rnd = n => Math.floor(Math.random() * n)
@@ -90,18 +94,14 @@ export function injectBotBets(game, seats) {
     if (seats[i]) continue                       // gerçek oyuncu → bot değil
     if (game.out?.[i]) continue
     if (Math.random() >= .35) continue            // her tick'te değil, doğal hissettir
-    const f = BOT_FALLBACK[i]
-    const bets = game.bets?.[i] || {}
-    const spent = Object.values(bets).reduce((a, x) => a + x, 0)
-    const chips = game.chips?.[i] ?? 0
-    const amt = [10, 50, 100][rnd(3)]
-    if (amt > chips - spent) continue
-    const pickSeg = () => {
-      if (f.style === 'safe') return [0, 3, 5, 7, 10][rnd(5)]
-      if (f.style === 'risk') return [6, 4, 9][rnd(3)]
-      return rnd(N)
-    }
-    placeBet(i, pickSeg(), amt)
+    const brain = botBrains[i]
+    const spent = Object.values(game.bets?.[i] || {}).reduce((a, x) => a + x, 0)
+    const bankroll = (game.chips?.[i] ?? 0) - spent
+    if (bankroll < 10) continue
+    const cls = brain.pickClass(SEG)
+    const segIdx = brain.pickSegment(SEG, cls)
+    const amt = Math.min(brain.betSize(bankroll), bankroll)
+    placeBet(i, segIdx, amt)
   }
 }
 
@@ -145,16 +145,23 @@ async function settlePhase(game, pool) {
   const idx = game.segResult, seg = SEG[idx]
   const chips = { ...game.chips }, out = { ...game.out }
   let poolDelta = 0, paidOut = 0, effMult = seg.t
+  // bir koltuğun verilen çarpan SINIFINDAKI tüm dilimlere koyduğu toplam bahis
+  const seatOnClass = (i, cls) => {
+    let s = 0
+    for (let j = 0; j < SEG.length; j++) if (SEG[j].t === cls) s += game.bets?.[i]?.[j] || 0
+    return s
+  }
   if (typeof seg.t === 'number' && seg.t > 0) {
-    let totalB = 0
-    for (let i = 0; i < N_SEATS; i++) totalB += game.bets?.[i]?.[idx] || 0
-    let mult = seg.t, over = totalB * (mult - 1)
-    if (over > pool) { mult = 1 + Math.floor(pool / Math.max(1, totalB)); if (mult < 1) mult = 1; over = totalB * (mult - 1) }
-    for (let i = 0; i < N_SEATS; i++) { const b = game.bets?.[i]?.[idx] || 0; if (b > 0) { chips[i] = (chips[i] || 0) + b * mult; paidOut += b * mult } }
+    const cls = seg.t
+    let totalB = 0; const per = {}
+    for (let i = 0; i < N_SEATS; i++) { per[i] = seatOnClass(i, cls); totalB += per[i] }
+    let mult = cls, over = totalB * (mult - 1)
+    if (over > pool) { mult = 1 + pool / Math.max(1, totalB); if (mult < 1) mult = 1; over = totalB * (mult - 1) }
+    for (let i = 0; i < N_SEATS; i++) if (per[i] > 0) { const win = Math.round(per[i] * mult); chips[i] = (chips[i] || 0) + win; paidOut += win }
     poolDelta = -over; effMult = mult
   } else if (seg.t === 'S') {
     const thieves = []
-    for (let i = 0; i < N_SEATS; i++) if (!out[i] && (game.bets?.[i]?.[idx] || 0) > 0) thieves.push(i)
+    for (let i = 0; i < N_SEATS; i++) if (!out[i] && seatOnClass(i, 'S') > 0) thieves.push(i)
     const rate = thieves.length > 1 ? .1 : .15
     thieves.forEach(th => {
       for (let o = 0; o < N_SEATS; o++) {
@@ -168,9 +175,9 @@ async function settlePhase(game, pool) {
   const patch = { chips, out, phase: 'result', phaseUntil: now() + RESULT_MS, lastMult: effMult }
   if (alive.length === 1) patch.winnerSeat = alive[0]
   await update(gRef(), patch)
-  if (poolDelta) adjPool(poolDelta)
+  if (poolDelta) adjPool(Math.round(poolDelta))
   if (paidOut) addPaid(paidOut)
-  log(`🎯 T${game.round}: ${seg.l}${effMult !== seg.t ? ` →x${effMult}` : ''} · pot ${game.pot || 0}`)
+  log(`🎯 T${game.round}: ${seg.l}${effMult !== seg.t ? ` →x${effMult.toFixed(2)}` : ''} · pot ${game.pot || 0}`)
 }
 
 function startRound(game, seats) {
