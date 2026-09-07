@@ -47,6 +47,16 @@ export default function App() {
 
   const log = (m, cls = '') => { G.current.feed.unshift({ m, cls }); G.current.feed = G.current.feed.slice(30) }
 
+  // Telegram haptikleri — dopamin katmanı (Mini App içinde çalışır, web'de sessiz)
+  const hap = k => {
+    const t = window.Telegram?.WebApp
+    try {
+      if (k === 'win') t?.HapticFeedback?.notificationOccurred('success')
+      else if (k === 'bad') t?.HapticFeedback?.notificationOccurred('error')
+      else t?.HapticFeedback?.impactOccurred?.(k || 'light')
+    } catch {}
+  }
+
   function botBet(b) {
     const g = G.current
     if (b.out) return
@@ -92,6 +102,7 @@ export default function App() {
       p.chips -= t; g.pot += t
     })
     log(`🔒 KASA KİLİTLENDİ · masada ${g.pot} chip`, 'r')
+    hap('medium')
     bump()
     later(spin, 1100)
   }
@@ -117,6 +128,7 @@ export default function App() {
     // transition'ı bırak, açıyı sabitle → çark sıfıra "zıplamaz"
     g.spinStyle = { transform: `rotate(${g.rot}deg)` }
     log(`🎯 ÇARK DURDU: ${seg.l}`, 'y')
+    hap(typeof seg.t === 'number' && seg.t > 0 ? 'win' : seg.t === 'S' ? 'medium' : 'bad')
 
     if (typeof seg.t === 'number' && seg.t > 0) {
       g.players.forEach(p => {
@@ -147,8 +159,20 @@ export default function App() {
     if (!g.winner) later(startRound, 3600)
   }
 
-  // ilk tur
-  useEffect(() => { startRound(); /* eslint-disable-next-line */ }, [])
+  // ilk tur + Telegram Mini App başlatma
+  useEffect(() => {
+    const t = window.Telegram?.WebApp
+    if (t) {
+      try {
+        t.ready(); t.expand()
+        t.setHeaderColor?.('#0b0e14'); t.setBackgroundColor?.('#0b0e14')
+        const u = t.initDataUnsafe?.user
+        if (u?.first_name) G.current.players[0].name = String(u.first_name).toUpperCase().slice(0, 10)
+        G.current.isTg = true
+      } catch {}
+    }
+    startRound(); /* eslint-disable-next-line */
+  }, [])
 
   function placeBet(i) {
     const g = G.current
@@ -188,7 +212,7 @@ export default function App() {
     <div className="app">
       <header>
         <h1>🥷 SOYGUN ÇARKI</h1>
-        <span className="tag">TUR {g.round} · MASA {g.players.filter(p => !p.out).length}/4 · POT {g.pot}</span>
+        <span className="tag">{g.isTg ? '✈️ TELEGRAM' : '🌐 WEB'} · TUR {g.round} · MASA {g.players.filter(p => !p.out).length}/4 · POT {g.pot}</span>
       </header>
 
       <div className="table">
@@ -196,7 +220,9 @@ export default function App() {
           <div className="wheelbox">
             <div className="pointer" />
             <svg viewBox="0 0 200 200">
-              <g style={g.spinStyle}>
+              {/* 🔴 transform-origin ŞART: yoksa SVG <g> köşe(0,0) etrafında
+                  döner ve çark "uçar". Merkez 100,100. */}
+              <g style={{ transformOrigin: '100px 100px', ...g.spinStyle }}>
                 {arcs.map(a => (
                   <g key={a.i} onClick={() => placeBet(a.i)} style={{ cursor: g.phase === 'bet' ? 'pointer' : 'default' }}>
                     <path d={a.d} fill={a.s.c} stroke="#0b0e14" strokeWidth="1.5" />
