@@ -99,3 +99,6 @@ header .tag{font-size:.7rem; color:var(--dim); border:1px solid #2a3346; border-
 .heart{position:absolute; left:50%; bottom:40%; font-size:1.1rem; pointer-events:none; animation:rise 1.2s ease-out forwards}
 @keyframes rise{from{transform:translate(-50%,0); opacity:1}to{transform:translate(-50%,-90px); opacity:0}}
 .game{display:flex; flex-direction:column; gap:12px}
+.likeRow{display:flex; gap:10px; flex-wrap:wrap; justify-content:center}
+.likecell{position:relative; display:flex; align-items:center; gap:6px; background:var(--panel); border:1px solid #2a3346; border-radius:99px; padding:4px 10px}
+.likename{font-size:.75rem; color:var(--dim); font-weight:700}

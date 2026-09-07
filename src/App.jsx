@@ -136,26 +136,16 @@ export default function App() {
         </div>
       ) : (
         <div className="game">
-          {mySeat >= 0 ? (
-            <Wheel meName={me.name} onResult={r => pushFeed(`🎯 T${r.round}: ${r.label} · ${r.msg || ''}`)} />
-          ) : (
-            <div className="specwrap">
-              <div className="spectitle">👁 CANLI MASA — beğen, destekle</div>
-              <div className="seatgrid">
-                {Array.from({ length: SEATS }, (_, i) => {
-                  const s = seats[i]
-                  return (
-                    <div key={i} className={`seat ${s ? 'full' : ''}`}>
-                      <div className="sava">{s ? '😎' : '🪑'}</div>
-                      <div className="sname">{s ? s.name : 'Boş'}</div>
-                      <div className="slike">❤️ {likes[i] || 0}</div>
-                      {s && <button className="likebtn" onClick={() => like(i)}>❤️</button>}
-                      {hearts.filter(h => h.i === i).map(h => <span key={h.id} className="heart">❤️</span>)}
-                    </div>
-                  )
-                })}
-              </div>
-              <div className="feed">{feed.map((f, i) => <div key={i}>{f.msg}</div>)}</div>
+          <Wheel seat={mySeat} seats={seats} meName={me.name} />
+          {mySeat < 0 && (
+            <div className="likeRow">
+              {Array.from({ length: SEATS }, (_, i) => seats[i] && (
+                <div key={i} className="likecell">
+                  <button className="likebtn" onClick={() => like(i)}>❤️</button>
+                  <span className="likename">{seats[i].name} · {likes[i] || 0}</span>
+                  {hearts.filter(h => h.i === i).map(h => <span key={h.id} className="heart">❤️</span>)}
+                </div>
+              ))}
             </div>
           )}
           <button className="btn ghost" onClick={leave}>← Lobiden Ayrıl</button>
