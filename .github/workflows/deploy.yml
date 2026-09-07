@@ -1,0 +1,35 @@
+# SOYGUN ÇARKI · GitHub → Vercel otomatik deploy
+#
+# KURULUM (bir kez):
+#   1) GitHub repo'nda Settings → Secrets → Actions → yeni secret ekle:
+#        VERCEL_TOKEN  → vercel.com/account/tokens 'dan üret
+#        VERCEL_ORG_ID → `vercel link` sonrası .vercel/project.json içinde
+#        VERCEL_PROJECT_ID → aynı dosyada
+#   2) Bu dosya zaten .github/workflows altında; push edince çalışır.
+#
+# NOT: En kolay yol aslında Vercel dashboard'dan repo'yu "Import" etmek —
+# o zaman bu workflow'a bile gerek yok, her push otomatik deploy olur.
+name: deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Deploy to Vercel
+        run: |
+          npm i -g vercel
+          vercel deploy --prebuilt --prod --token ${{ secrets.VERCEL_TOKEN }} \
+            --scope ${{ secrets.VERCEL_ORG_ID }} || \
+          vercel --prod --token ${{ secrets.VERCEL_TOKEN }}
