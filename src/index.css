@@ -78,3 +78,24 @@ header .tag{font-size:.7rem; color:var(--dim); border:1px solid #2a3346; border-
 @keyframes pop{from{transform:scale(.6); opacity:0}}
 
 .hint{font-size:.7rem; color:var(--dim); text-align:center; margin-top:8px}
+
+/* ── LOBİ ─────────────────────────────────────────────── */
+.lobby{display:flex; flex-direction:column; gap:14px; align-items:center}
+.walletcard{width:100%; background:var(--panel); border:1px solid #2a3346; border-radius:16px; padding:14px; text-align:center}
+.walletcard .wname{font-weight:800; color:var(--gold2); font-size:1.1rem}
+.walletcard .waddr{font-family:monospace; color:var(--dim); margin-top:4px; font-size:.8rem}
+.walletcard .wsub{font-size:.65rem; color:var(--dim); margin-top:2px}
+.seatgrid{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; width:100%}
+@media (max-width:600px){ .seatgrid{grid-template-columns:repeat(2,1fr)} }
+.seat{position:relative; background:var(--panel); border:2px dashed #2a3346; border-radius:16px; padding:16px 8px; text-align:center; overflow:hidden}
+.seat.full{border-style:solid; border-color:var(--gold); box-shadow:0 0 16px rgba(245,179,1,.15)}
+.seat .sava{font-size:1.8rem}
+.seat .sname{font-weight:700; margin-top:4px; font-size:.8rem; overflow:hidden; text-overflow:ellipsis}
+.seat .slike{color:var(--red); font-size:.75rem; margin-top:2px; font-weight:700}
+.lobbtns{display:flex; gap:10px}
+.specwrap{display:flex; flex-direction:column; gap:12px}
+.spectitle{font-weight:800; color:var(--gold); letter-spacing:1px}
+.likebtn{margin-top:6px; background:var(--red); border:none; border-radius:99px; color:#fff; padding:6px 16px; font-size:1rem; cursor:pointer; animation:pulse 1.2s infinite}
+.heart{position:absolute; left:50%; bottom:40%; font-size:1.1rem; pointer-events:none; animation:rise 1.2s ease-out forwards}
+@keyframes rise{from{transform:translate(-50%,0); opacity:1}to{transform:translate(-50%,-90px); opacity:0}}
+.game{display:flex; flex-direction:column; gap:12px}
