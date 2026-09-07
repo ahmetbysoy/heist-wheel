@@ -3,7 +3,7 @@
 // RNG belirler, boş koltuklara bot bahsi yazar. Herkes aynı `game` node'unu
 // okuyup render eder — local state yok.
 import { useEffect, useState } from 'react'
-import { db, ref, onValue, update, runTransaction, ROOT } from './firebase.js'
+import { db, ref, onValue, set, get, update, runTransaction, ROOT } from './firebase.js'
 
 export const N_SEATS = 4
 export const BET_S = 15
@@ -57,16 +57,17 @@ export function hostSeat(seats) {
   return best
 }
 
-// oyun node'u yoksa ilk defa kurar (herhangi bir client tetikleyebilir, transaction güvenli)
-export function initGameIfMissing() {
-  return runTransaction(gRef(), cur => {
-    if (cur) return
-    const chips = {}, out = {}
-    for (let i = 0; i < N_SEATS; i++) { chips[i] = 1000; out[i] = false }
-    return {
-      phase: 'bet', round: 1, phaseUntil: now() + BET_S * 1000,
-      bets: {}, chips, out, segResult: null, winnerSeat: null, feed: {},
-    }
+// oyun node'u yoksa ilk defa kurar.
+// 🔴 runTransaction KULLANMA: cache boşken cur=null gelir ve "var olan" oyunu
+// ezerdik. get() ile gerçek "yok mu" kontrolü yap, sonra set.
+export async function initGameIfMissing() {
+  const s = await get(gRef())
+  if (s.exists()) return
+  const chips = {}, out = {}
+  for (let i = 0; i < N_SEATS; i++) { chips[i] = 1000; out[i] = false }
+  return set(gRef(), {
+    phase: 'bet', round: 1, phaseUntil: now() + BET_S * 1000,
+    bets: {}, chips, out, segResult: null, winnerSeat: null, feed: {},
   })
 }
 
