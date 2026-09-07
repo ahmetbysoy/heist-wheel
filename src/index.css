@@ -102,3 +102,9 @@ header .tag{font-size:.7rem; color:var(--dim); border:1px solid #2a3346; border-
 .likeRow{display:flex; gap:10px; flex-wrap:wrap; justify-content:center}
 .likecell{position:relative; display:flex; align-items:center; gap:6px; background:var(--panel); border:1px solid #2a3346; border-radius:99px; padding:4px 10px}
 .likename{font-size:.75rem; color:var(--dim); font-weight:700}
+.econbar{display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:center; font-size:.78rem; color:var(--dim); margin:8px 0}
+.econbar b{color:#fff}
+.econbar .ok{color:#4be39a; font-weight:800}
+.econbar .bad{color:#ff6b6b; font-weight:800}
+.btn.ghost.sm{padding:5px 11px; font-size:.75rem}
+.wbal{font-size:1.1rem;font-weight:800;color:#4be39a;margin:4px 0}

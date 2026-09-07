@@ -4,6 +4,7 @@
 // okuyup render eder — local state yok.
 import { useEffect, useState } from 'react'
 import { db, ref, onValue, set, get, update, runTransaction, ROOT } from './firebase.js'
+import { getPool, adjPool, addPaid } from './economy.js'
 
 export const N_SEATS = 4
 export const BET_S = 15
@@ -107,11 +108,11 @@ export function injectBotBets(game, seats) {
 // ── SADECE HOST çağırır: faz süresi dolduysa bir sonraki faza geç ──
 // runTransaction ile `phase` alanı korunuyor → iki client aynı anda host
 // sanıp çift geçiş yapamaz (reconnect race'ine karşı güvenlik).
-export function advancePhase(game, seats) {
+export async function advancePhase(game, seats) {
   if (!game || now() < game.phaseUntil) return
   if (game.phase === 'bet') return lockPhase()
   if (game.phase === 'lock') return spinPhase()
-  if (game.phase === 'spin') return settlePhase(game)
+  if (game.phase === 'spin') { const pool = await getPool(); return settlePhase(game, pool) }
   if (game.phase === 'result') return startRound(game, seats)
 }
 
@@ -137,35 +138,39 @@ function spinPhase() {
   })
 }
 
-function settlePhase(game) {
-  return runTransaction(gRef(), g => {
-    if (!g || g.phase !== 'spin') return
-    const idx = g.segResult, seg = SEG[idx]
-    const chips = { ...g.chips }, out = { ...g.out }
-    if (typeof seg.t === 'number' && seg.t > 0) {
-      for (let i = 0; i < N_SEATS; i++) {
-        const b = g.bets?.[i]?.[idx] || 0
-        if (b > 0) chips[i] = (chips[i] || 0) + b * seg.t
+// Dinamik RTP: çarpan ödemesinin "pot üstü" kısmı PRIZE POOL'dan gelir.
+// Pool yetmezse çarpan otomatik küçülür → kasa asla negatife düşmez.
+// BOMB → kasa kazanır, pot prize pool'a akar. STEAL → oyuncular arası (pool nötr).
+async function settlePhase(game, pool) {
+  const idx = game.segResult, seg = SEG[idx]
+  const chips = { ...game.chips }, out = { ...game.out }
+  let poolDelta = 0, paidOut = 0, effMult = seg.t
+  if (typeof seg.t === 'number' && seg.t > 0) {
+    let totalB = 0
+    for (let i = 0; i < N_SEATS; i++) totalB += game.bets?.[i]?.[idx] || 0
+    let mult = seg.t, over = totalB * (mult - 1)
+    if (over > pool) { mult = 1 + Math.floor(pool / Math.max(1, totalB)); if (mult < 1) mult = 1; over = totalB * (mult - 1) }
+    for (let i = 0; i < N_SEATS; i++) { const b = game.bets?.[i]?.[idx] || 0; if (b > 0) { chips[i] = (chips[i] || 0) + b * mult; paidOut += b * mult } }
+    poolDelta = -over; effMult = mult
+  } else if (seg.t === 'S') {
+    const thieves = []
+    for (let i = 0; i < N_SEATS; i++) if (!out[i] && (game.bets?.[i]?.[idx] || 0) > 0) thieves.push(i)
+    const rate = thieves.length > 1 ? .1 : .15
+    thieves.forEach(th => {
+      for (let o = 0; o < N_SEATS; o++) {
+        if (o === th || out[o]) continue
+        const take = Math.floor((chips[o] || 0) * rate); chips[o] -= take; chips[th] = (chips[th] || 0) + take
       }
-    } else if (seg.t === 'S') {
-      const thieves = []
-      for (let i = 0; i < N_SEATS; i++) if (!out[i] && (g.bets?.[i]?.[idx] || 0) > 0) thieves.push(i)
-      const rate = thieves.length > 1 ? .1 : .15
-      thieves.forEach(th => {
-        for (let o = 0; o < N_SEATS; o++) {
-          if (o === th || out[o]) continue
-          const take = Math.floor((chips[o] || 0) * rate)
-          chips[o] -= take; chips[th] = (chips[th] || 0) + take
-        }
-      })
-    }
-    for (let i = 0; i < N_SEATS; i++) if ((chips[i] || 0) <= 0) { chips[i] = 0; out[i] = true }
-    const alive = [0, 1, 2, 3].filter(i => !out[i])
-    g.chips = chips; g.out = out; g.phase = 'result'; g.phaseUntil = now() + RESULT_MS
-    if (alive.length === 1) g.winnerSeat = alive[0]
-    log(`🎯 T${g.round}: ${seg.l} · pot ${g.pot || 0}`)   // seyirciye canlı yayın
-    return g
-  })
+    })
+  } else { poolDelta += (game.pot || 0) }   // 💣 BOMB → kasa
+  for (let i = 0; i < N_SEATS; i++) if ((chips[i] || 0) <= 0) { chips[i] = 0; out[i] = true }
+  const alive = [0, 1, 2, 3].filter(i => !out[i])
+  const patch = { chips, out, phase: 'result', phaseUntil: now() + RESULT_MS, lastMult: effMult }
+  if (alive.length === 1) patch.winnerSeat = alive[0]
+  await update(gRef(), patch)
+  if (poolDelta) adjPool(poolDelta)
+  if (paidOut) addPaid(paidOut)
+  log(`🎯 T${game.round}: ${seg.l}${effMult !== seg.t ? ` →x${effMult}` : ''} · pot ${game.pot || 0}`)
 }
 
 function startRound(game, seats) {

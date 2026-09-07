@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="720" viewBox="0 0 980 720" font-family="system-ui,Segoe UI,Arial">
+  <defs>
+    <marker id="arw" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#8ea3c9"/></marker>
+    <marker id="arwg" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#00c26e"/></marker>
+  </defs>
+  <rect width="980" height="720" fill="#0b0e14"/>
+  <text x="30" y="42" fill="#ffd75e" font-size="24" font-weight="800">🎰 SOYGUN ÇARKI — Oyun Ekonomisi</text>
+  <text x="30" y="66" fill="#8ea3c9" font-size="13">Kural: PARA GİRİŞİ YOK (sadece reklam), PARA ÇIKIŞI VAR → sweepstakes mantığı</text>
+
+  <!-- lane labels -->
+  <text x="30" y="118" fill="#6f83ad" font-size="12" font-weight="700">① KAZANMA MUSLUĞU (reklam)</text>
+  <text x="30" y="330" fill="#6f83ad" font-size="12" font-weight="700">② OYUN (zero-sum + kasa ek ödemesi)</text>
+  <text x="30" y="545" fill="#6f83ad" font-size="12" font-weight="700">③ ÇEKİM (ayrı sayfa)</text>
+
+  <!-- Reklam -->
+  <rect x="30" y="132" width="210" height="66" rx="12" fill="#161b28" stroke="#2a3346"/>
+  <text x="135" y="160" fill="#fff" font-size="15" font-weight="800" text-anchor="middle">📺 Reklam izle</text>
+  <text x="135" y="182" fill="#8ea3c9" font-size="11" text-anchor="middle">server doğrulamalı (SSV)</text>
+
+  <!-- AD-COIN -->
+  <rect x="300" y="132" width="240" height="66" rx="12" fill="#2a2410" stroke="#f5b301"/>
+  <text x="420" y="158" fill="#ffd75e" font-size="15" font-weight="800" text-anchor="middle">🟡 AD-COIN (yumuşak)</text>
+  <text x="420" y="180" fill="#8ea3c9" font-size="11" text-anchor="middle">çekilemez · sadece bahis</text>
+  <line x1="240" y1="165" x2="298" y2="165" stroke="#8ea3c9" stroke-width="2" marker-end="url(#arw)"/>
+
+  <!-- Masa -->
+  <rect x="620" y="132" width="330" height="66" rx="12" fill="#161b28" stroke="#2a3346"/>
+  <text x="785" y="158" fill="#fff" font-size="15" font-weight="800" text-anchor="middle">🎰 Masaya otur · buy-in koy</text>
+  <text x="785" y="180" fill="#8ea3c9" font-size="11" text-anchor="middle">AD-COIN ile</text>
+  <line x1="540" y1="165" x2="618" y2="165" stroke="#8ea3c9" stroke-width="2" marker-end="url(#arw)"/>
+
+  <!-- Pot -->
+  <rect x="620" y="230" width="155" height="60" rx="12" fill="#161b28" stroke="#2a3346"/>
+  <text x="697" y="256" fill="#fff" font-size="13" font-weight="800" text-anchor="middle">⚪ Masa Potu</text>
+  <text x="697" y="276" fill="#8ea3c9" font-size="10" text-anchor="middle">zero-sum</text>
+  <!-- Mult -->
+  <rect x="795" y="230" width="155" height="60" rx="12" fill="#161b28" stroke="#e23b3b"/>
+  <text x="872" y="256" fill="#ff8a8a" font-size="13" font-weight="800" text-anchor="middle">📈 Çarpan farkı</text>
+  <text x="872" y="276" fill="#8ea3c9" font-size="10" text-anchor="middle">x2/x3/x5 · kasa maliyeti</text>
+  <line x1="785" y1="198" x2="740" y2="228" stroke="#8ea3c9" stroke-width="2" marker-end="url(#arw)"/>
+  <line x1="785" y1="198" x2="850" y2="228" stroke="#8ea3c9" stroke-width="2" marker-end="url(#arw)"/>
+
+  <!-- Prize Pool -->
+  <rect x="300" y="228" width="240" height="64" rx="12" fill="#0f2b20" stroke="#00c26e"/>
+  <text x="420" y="254" fill="#4be39a" font-size="15" font-weight="800" text-anchor="middle">🏦 PRIZE POOL</text>
+  <text x="420" y="276" fill="#8ea3c9" font-size="10" text-anchor="middle">reklam marjı girer · çarpanı öder</text>
+  <line x1="420" y1="198" x2="420" y2="226" stroke="#8ea3c9" stroke-width="2" marker-end="url(#arw)"/>
+  <text x="430" y="216" fill="#6f83ad" font-size="10">reklam marjı %50</text>
+  <line x1="540" y1="260" x2="793" y2="260" stroke="#00c26e" stroke-width="2" marker-end="url(#arwg)"/>
+  <text x="600" y="252" fill="#4be39a" font-size="10">pool boşsa çarpan düşer</text>
+
+  <!-- VAULT -->
+  <rect x="300" y="360" width="240" height="66" rx="12" fill="#10241b" stroke="#00c26e"/>
+  <text x="420" y="386" fill="#4be39a" font-size="15" font-weight="800" text-anchor="middle">🟢 VAULT-COIN (sert)</text>
+  <text x="420" y="408" fill="#8ea3c9" font-size="11" text-anchor="middle">çekilebilir · kazanç buraya</text>
+  <line x1="697" y1="290" x2="500" y2="358" stroke="#8ea3c9" stroke-width="2" marker-end="url(#arw)"/>
+  <line x1="872" y1="290" x2="540" y2="358" stroke="#8ea3c9" stroke-width="2" marker-end="url(#arw)"/>
+
+  <!-- Cashout page -->
+  <rect x="620" y="360" width="330" height="66" rx="12" fill="#161b28" stroke="#2a3346"/>
+  <text x="785" y="386" fill="#fff" font-size="15" font-weight="800" text-anchor="middle">🔗 Ayrı Çekim Sayfası</text>
+  <text x="785" y="408" fill="#8ea3c9" font-size="11" text-anchor="middle">18+ · KYC · minimum tur/yaş</text>
+  <line x1="540" y1="393" x2="618" y2="393" stroke="#8ea3c9" stroke-width="2" marker-end="url(#arw)"/>
+
+  <!-- Wallet -->
+  <rect x="620" y="452" width="330" height="66" rx="12" fill="#0f2b20" stroke="#00c26e"/>
+  <text x="785" y="478" fill="#4be39a" font-size="15" font-weight="800" text-anchor="middle">💵 Cüzdan · USDT</text>
+  <text x="785" y="500" fill="#8ea3c9" font-size="11" text-anchor="middle">TON / TRC-20</text>
+  <line x1="785" y1="426" x2="785" y2="450" stroke="#8ea3c9" stroke-width="2" marker-end="url(#arw)"/>
+
+  <!-- FOMO feed -->
+  <rect x="30" y="452" width="250" height="66" rx="12" fill="#161b28" stroke="#2a3346"/>
+  <text x="155" y="478" fill="#ffd75e" font-size="14" font-weight="800" text-anchor="middle">📣 FOMO Feed + TG</text>
+  <text x="155" y="500" fill="#8ea3c9" font-size="11" text-anchor="middle">"Ahmet 12 USDT çekti"</text>
+  <line x1="618" y1="485" x2="282" y2="485" stroke="#8ea3c9" stroke-width="2" marker-end="url(#arw)"/>
+
+  <!-- anti-abuse box -->
+  <rect x="30" y="560" width="920" height="120" rx="12" fill="#12161f" stroke="#2a3346"/>
+  <text x="48" y="588" fill="#ff8a8a" font-size="14" font-weight="800">⚠️ Kritik kurallar</text>
+  <text x="48" y="612" fill="#cfd8ee" font-size="12">• ASLA parayla AD-COIN/VAULT satma → "para girişi" olursa = kumar (sweepstakes koruması düşer)</text>
+  <text x="48" y="634" fill="#cfd8ee" font-size="12">• Coin client "izledim" event'inden DEĞİL, reklam ağının server callback'inden (SSV) verilsin</text>
+  <text x="48" y="656" fill="#cfd8ee" font-size="12">• Prize Pool ≤ 0 olursa çarpanlar otomatik küçülür (dinamik RTP) → kasa asla negatife düşmez</text>
+</svg>

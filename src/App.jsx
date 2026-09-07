@@ -4,9 +4,10 @@ import {
   db, ROOT, ref, onValue, set, update, get, remove,
   onDisconnect, runTransaction, identity, demoWallet,
 } from './firebase.js'
+import { useEcon, watchAd, claimDailyFree } from './economy.js'
 
-const BUY_IN = 1          // masaya oturma bedeli (oyun USDT)
-const START_BAL = 5       // yeni kullanıcı başlangıç bakiyesi
+const BUY_IN = 20         // chip — buy-in düşürüldü (tier-3 eCPM'e göre)
+const START_BAL = 100     // başlangıç chip
 const SEATS = 4
 
 export default function App() {
@@ -20,6 +21,10 @@ export default function App() {
   const [mySeat, setMySeat] = useState(-1)
   const [wallet, setWallet] = useState('')
   const [hearts, setHearts] = useState([])
+  const econ = useEcon()
+
+  const ad = async () => { const r = await watchAd(me.uid); if (!r.ok) alert(r.msg) }
+  const amoe = async () => { const r = await claimDailyFree(me.uid); if (!r.ok) alert(r.msg) }
 
   // ── başlangıç: kullanıcı kaydı + cüzdan-ID eşleme ──
   useEffect(() => {
@@ -52,7 +57,7 @@ export default function App() {
 
   // ── masaya otur (ilk gelen, 1 USDT) ──
   async function joinSeat() {
-    if (bal == null || bal < BUY_IN) return alert(`Oturmak için ${BUY_IN} USDT gerek (bakiye ${bal})`)
+    if (bal == null || bal < BUY_IN) return alert(`Oturmak için ${BUY_IN} chip gerek (bakiye ${bal})`)
     for (let i = 0; i < SEATS; i++) {
       if (seats[i]) continue
       const r = await runTransaction(ref(db, `${ROOT}/table/seats/${i}`), cur => {
@@ -107,11 +112,23 @@ export default function App() {
         <span className="tag">💳 {bal ?? '…'} USDT · 👥 {seatedCount}/4 · 👁 {Object.keys(specs).length}</span>
       </header>
 
+      <div className="econbar">
+        <span>🏦 Havuz <b>{econ?.prize_pool || 0}</b></span>
+        <span>💸 Ödenen <b>{econ?.paid_chips || 0}</b></span>
+        <span>📺 Gelir <b>{econ?.ad_revenue || 0}</b></span>
+        <span className={((econ?.ad_revenue || 0) - (econ?.paid_chips || 0)) >= 0 ? 'ok' : 'bad'}>
+          Δ {((econ?.ad_revenue || 0) - (econ?.paid_chips || 0))}
+        </span>
+        <button className="btn ghost sm" onClick={ad}>📺 Reklam (sim)</button>
+        <button className="btn ghost sm" onClick={amoe}>🎁 Bedava</button>
+      </div>
+
       {screen === 'lobby' ? (
         <div className="lobby">
           <div className="walletcard">
             <div className="wname">{me.name}</div>
             <div className="waddr">🔑 {wallet.slice(0, 10)}…{wallet.slice(-6)}</div>
+            <div className="wbal">💰 {bal ?? 0} chip</div>
             <div className="wsub">cüzdan, kullanıcı ID'nle eşlendi {me.tg ? '(Telegram)' : '(misafir)'}</div>
           </div>
 
@@ -129,7 +146,7 @@ export default function App() {
           </div>
 
           <div className="lobbtns">
-            <button className="btn" onClick={joinSeat}>🪑 OTUR — {BUY_IN} USDT</button>
+            <button className="btn" onClick={joinSeat}>🪑 OTUR — {BUY_IN} chip</button>
             <button className="btn ghost" onClick={spectate}>👁 İZLE + BEĞEN</button>
           </div>
           <div className="hint">İlk gelen 4 kişi oturur · diğerleri izler & beğenir · koltuk = {BUY_IN} USDT (oyun parası)</div>
