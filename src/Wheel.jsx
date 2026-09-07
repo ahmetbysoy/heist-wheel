@@ -4,6 +4,7 @@ import {
   placeBet, clearMyBets, advancePhase, injectBotBets, resetGame,
   now, seatInfo,
 } from './gameSync.js'
+import { tick, bassDrop, bombSound, haptic, shake } from './core/juice.js'
 
 const N = SEG.length
 
@@ -17,6 +18,8 @@ export default function Wheel({ seat = -1, seats = {}, meName }) {
   const gRef = useRef(null); gRef.current = game
   const sRef = useRef(null); sRef.current = seats
   const isHost = seat >= 0 && hostSeat(seats) === seat
+  const spinTimers = useRef([])
+  const prevPhase = useRef(null)
 
   useEffect(() => { initGameIfMissing() }, [])
 
@@ -44,6 +47,27 @@ export default function Wheel({ seat = -1, seats = {}, meName }) {
     }
   }, [game?.phase, game?.segResult])
 
+  // FAZ 4 juice: spin gerilim nabzı + sonuçta ses/sarsıntı/haptik
+  useEffect(() => {
+    if (!game) return
+    const ph = game.phase
+    if (ph === 'spin' && prevPhase.current !== 'spin') {
+      haptic('spin')
+      const iv = setInterval(() => { tick(); haptic('tick') }, 170)
+      const to = setTimeout(() => clearInterval(iv), SPIN_MS)
+      spinTimers.current = [iv, to]
+    }
+    if (ph === 'result' && prevPhase.current !== 'result') {
+      spinTimers.current.forEach(c => { clearInterval(c); clearTimeout(c) }); spinTimers.current = []
+      const t = SEG[game.segResult]?.t
+      if (t === 0) { bombSound(); haptic('bomb'); shake('heavy') }
+      else if (t === 'S') { haptic('steal'); shake('medium') }
+      else if (typeof t === 'number' && t >= 5) { bassDrop(); haptic('win'); shake('medium') }
+      else { tick(); haptic('win'); shake('light') }
+    }
+    prevPhase.current = ph
+  }, [game?.phase, game?.segResult])
+
   if (!game) return <div className="statusband">⏳ masa kuruluyor…</div>
 
   const myBets = seat >= 0 ? (game.bets?.[seat] || {}) : {}
@@ -64,7 +88,7 @@ export default function Wheel({ seat = -1, seats = {}, meName }) {
     return { s, i, d: `M100,100 L${x0},${y0} A96,96 0 0,1 ${x1},${y1} Z`, tx: 100 + 66 * Math.cos(mid), ty: 100 + 66 * Math.sin(mid) }
   })
 
-  const bet = i => { if (seat >= 0 && game.phase === 'bet') placeBet(seat, i, chip) }
+  const bet = i => { if (seat >= 0 && game.phase === 'bet') { placeBet(seat, i, chip); haptic('bet'); tick() } }
   const feedLines = Object.values(game.feed || {}).sort((a, b) => (b.ts || 0) - (a.ts || 0)).slice(0, 8)
 
   return (
